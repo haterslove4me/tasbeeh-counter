@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Counter</title>
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            user-select: none; /* Prevent text selection */
+        }
+
+        /* Counter Container */
+        #counter-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            background-color: #fff;
+            cursor: pointer; /* Indicate clickable area */
+            width: 80%; /* Responsive width */
+            max-width: 400px; /* Maximum width */
+            transition: border-color 0.3s ease, transform 0.3s ease;
+        }
+
+        #counter-container:hover {
+            transform: scale(1.02);
+        }
+
+        /* Count Display */
+        #count-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            transition: color 0.3s ease;
+        }
+
+        .target-reached #count-display {
+            color: green; /* Change color when target is reached */
+        }
+
+        /* Target Input Section */
+        #target-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #target-input {
+            font-size: 1rem;
+            padding: 5px;
+            width: 80px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+            transition: border-color 0.3s ease;
+        }
+
+        #target-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        #target-display {
+            font-size: 1rem;
+            color: #555;
+        }
+
+        /* Reset Button */
+        #reset-button {
+            padding: 8px 16px;
+            font-size: 1rem;
+            background-color: #4CAF50; /* Green */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease; /* Smooth transition */
+        }
+
+        #reset-button:hover {
+            background-color: #3e8e41; /* Darker green */
+        }
+
+        /* Error Message */
+        #error-message {
+            color: red;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #error-message.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="counter-container">
+        <div id="count-display">0</div>
+        <div id="target-container">
+            <span>Target:</span>
+            <input type="number" id="target-input" value="100" min="0">
+            <span id="target-display">/ 100</span>
+        </div>
+        <button id="reset-button">Reset</button>
+        <div id="error-message"></div>
+    </div>
+    <audio id="completion-sound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio> <!-- Replace with your sound file -->
+    <script>
+        const counterContainer = document.getElementById('counter-container');
+        const countDisplay = document.getElementById('count-display');
+        const targetInput = document.getElementById('target-input');
+        const targetDisplay = document.getElementById('target-display');
+        const completionSound = document.getElementById('completion-sound');
+        const resetButton = document.getElementById('reset-button');
+        const errorMessage = document.getElementById('error-message');
+
+        let count = 0;
+        let target = 100;
+
+        // Load count and target from localStorage (if available)
+        if (localStorage.getItem('count')) {
+            count = parseInt(localStorage.getItem('count'));
+            countDisplay.textContent = count;
+        }
+
+        if (localStorage.getItem('target')) {
+            target = parseInt(localStorage.getItem('target'));
+            targetInput.value = target;
+            targetDisplay.textContent = `/ ${target}`;
+        }
+
+        function updateDisplay() {
+            if (count >= target) {
+                counterContainer.classList.add('target-reached');
+                if (!completionSound.played.length) {
+                    completionSound.play();
+                }
+            } else {
+                counterContainer.classList.remove('target-reached');
+            }
+        }
+
+        counterContainer.addEventListener('click', (e) => {
+            // Check if the click occurred on the target input field
+            if (e.target === targetInput || e.target.closest('#target-input')) {
+                return; // Do nothing if clicking on the target input
+            }
+
+            if (count < target) {
+                count++;
+                countDisplay.textContent = count;
+                localStorage.setItem('count', count);
+                updateDisplay();
+            }
+        });
+
+        targetInput.addEventListener('change', () => {
+            const newTarget = parseInt(targetInput.value);
+            if (!isNaN(newTarget) && newTarget >= 0) {
+                target = newTarget;
+                targetDisplay.textContent = `/ ${target}`;
+                localStorage.setItem('target', target);
+                errorMessage.classList.remove('visible');
+                errorMessage.textContent = '';
+                completionSound.pause();
+                completionSound.currentTime = 0;
+                updateDisplay();
+            } else {
+                errorMessage.textContent = '⚠️ Please enter a valid non-negative number';
+                errorMessage.classList.add('visible');
+                targetInput.value = target;
+            }
+        });
+
+        resetButton.addEventListener('click', () => {
+            count = 0;
+            target = 100;
+            targetInput.value = target;
+            countDisplay.textContent = count;
+            targetDisplay.textContent = `/ ${target}`;
+            localStorage.setItem('count', count);
+            localStorage.setItem('target', target);
+            errorMessage.classList.remove('visible');
+            errorMessage.textContent = '';
+            completionSound.pause();
+            completionSound.currentTime = 0;
+            counterContainer.classList.remove('target-reached');
+        });
+
+        updateDisplay(); // Initial display update
+    </script>
+</body>
+</html>
